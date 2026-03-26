@@ -34,7 +34,8 @@ jobs:
           sshpass -p "${{ secrets.STUDENT_PASSWORD }}" \
             ssh -o StrictHostKeyChecking=no \
                 "${{ inputs.ssh_username }}@${{ inputs.ec2_host }}" \
-                "IMAGE_REF='${{ inputs.image_ref }}' PORT='${PORT}' bash -s" << 'EOF'
+                "which docker || echo 'Docker not found'"
+          
           set -euo pipefail
 
           echo "Pulling image: ${IMAGE_REF}"
