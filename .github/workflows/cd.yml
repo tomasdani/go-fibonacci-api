@@ -22,7 +22,7 @@ jobs:
   deploy:
     name: Deploy to EC2
     runs-on: ubuntu-latest
-    environment: student-deploy  # <-- add required reviewers in repo settings
+    environment: student-deploy
 
     steps:
       - name: Install sshpass
@@ -31,23 +31,17 @@ jobs:
       - name: Deploy container
         run: |
           PORT="80${{ inputs.student_number }}"
+          IMAGE_REF="${{ inputs.image_ref }}"
+          
           sshpass -p "${{ secrets.STUDENT_PASSWORD }}" \
             ssh -o StrictHostKeyChecking=no \
                 "${{ inputs.ssh_username }}@${{ inputs.ec2_host }}" \
-                "which docker || echo 'Docker not found'"
-          
-          set -euo pipefail
-
-          echo "Pulling image: ${IMAGE_REF}"
-          docker pull "${IMAGE_REF}"
-
-          echo "Stopping any container publishing port ${PORT} (if any)..."
-          docker ps -q --filter "publish=${PORT}" | xargs -r docker stop
-
-          echo "Running container on host port ${PORT} -> container 8080..."
-          docker run -d -p "${PORT}:8080" "${IMAGE_REF}"
-
-          echo "Current containers:"
-          docker ps --format 'table {{.ID}}\t{{.Image}}\t{{.Ports}}\t{{.Status}}'
-          EOF
-
+                "set -euo pipefail; \
+                 echo 'Pulling image: ${IMAGE_REF}'; \
+                 docker pull '${IMAGE_REF}'; \
+                 echo 'Stopping any container publishing port ${PORT}...'; \
+                 docker ps -q --filter 'publish=${PORT}' | xargs -r docker stop || true; \
+                 echo 'Running container on host port ${PORT} -> container 8080...'; \
+                 docker run -d -p '${PORT}:8080' '${IMAGE_REF}'; \
+                 echo 'Current containers:'; \
+                 docker ps --format 'table {{.ID}}\t{{.Image}}\t{{.Ports}}\t{{.Status}}'"
